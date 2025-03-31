@@ -19,6 +19,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -101,7 +102,8 @@ public class ToDoListController {
     )
     public ResponseEntity<?> taskList(@RequestParam(required = false) Status status,
                                       @RequestParam(required = false) Priority priority,
-                                      @RequestParam SortDirection sortDirection){
+                                      @RequestParam(required = false) SortDirection sortDirection,
+                                      @RequestParam(required = false) Boolean sortByPriority){
         try {
 
             List<ToDoList> tasks = toDoListDb.findAll();
@@ -112,10 +114,18 @@ public class ToDoListController {
             if (priority != null){
                 tasks = tasks.stream().filter(task -> task.getPriority() == priority).collect(Collectors.toList());
             }
-            if(sortDirection.equals(SortDirection.DESC)){
-                tasks.sort((t1, t2) -> t2.getCreateDate().compareTo(t1.getCreateDate()));
+            if (Boolean.TRUE.equals(sortByPriority)) {
+                tasks.sort(Comparator.comparing(ToDoList::getPriority));
+
+            } else if (Boolean.FALSE.equals(sortByPriority)) {
+                tasks.sort(Comparator.comparing(ToDoList::getPriority).reversed());
+
             } else {
-                tasks.sort((t1, t2) -> t1.getCreateDate().compareTo(t2.getCreateDate()));
+                if (sortDirection != null && sortDirection.equals(SortDirection.DESC)) {
+                    tasks.sort((t1, t2) -> t2.getCreateDate().compareTo(t1.getCreateDate()));
+                } else {
+                    tasks.sort((t1, t2) -> t1.getCreateDate().compareTo(t2.getCreateDate()));
+                }
             }
 
             return ResponseEntity
