@@ -50,8 +50,14 @@ public class ToDoListController {
                                             @RequestParam(required = false) Priority priority){
         try{
             ToDoList task = new ToDoList();
-            task.setTitle(title);
             task.setDescription(description != null ? description : "");
+
+            if (title.length() < 4){
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(new ResponseModel(400, "Имя не может быть короче 4 символов"));
+            }
 
             if (deadline == null) {
                 deadline = extractDeadline(title);
@@ -69,6 +75,8 @@ public class ToDoListController {
             }
             task.setPriority(priority);
 
+            title = cleanTitle(title);
+            task.setTitle(title);
             toDoListDb.save(task);
 
             return ResponseEntity
@@ -170,7 +178,6 @@ public class ToDoListController {
             }
 
             if(title != null) {
-                task.setTitle(title);
 
                 if (priority == null){
                     priority = detectPriority(title);
@@ -179,6 +186,9 @@ public class ToDoListController {
                 if (deadline == null) {
                     deadline = extractDeadline(title);
                 }
+
+                title = cleanTitle(title);
+                task.setTitle(title);
             }
 
             if(description != null) task.setDescription(description);
@@ -376,6 +386,17 @@ public class ToDoListController {
             }
         }
         return null;
+    }
+
+    private String cleanTitle(String title) {
+        title = title.replaceAll("!1", "")
+                .replaceAll("!2", "")
+                .replaceAll("!3", "")
+                .replaceAll("!4", "");
+
+        title = title.replaceAll("!before\\s\\d{2}[.-]\\d{2}[.-]\\d{4}", "");
+
+        return title.trim().replaceAll("\\s{2,}", " ");
     }
 
 }
